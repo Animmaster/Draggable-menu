@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Draggable Menu</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --base-100: #f4ede4;
+        --base-200: #1a1815;
+        --base-300: #ff5a1f;
+        --base-400: #f4ede4;
+        --ink: #1a1815;
+        --bg: #2a2622;
+      }
+
+      body {
+        background-color: var(--bg);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Google Sans", sans-serif;
+      }
+
+      .menu-drop-zone {
+        position: fixed;
+        top: 2rem;
+        left: 2rem;
+        height: calc(3.5rem + 0.7rem);
+        border: 0.075rem dashed rgba(244, 237, 228, 0.4);
+        border-radius: 4rem;
+        transition: opacity 0.2s ease-out;
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      .menu-drawer {
+        position: fixed;
+        top: 2rem;
+        left: 2rem;
+        padding: 0.35rem;
+        background-color: var(--base-200);
+        border-radius: 4rem;
+        display: flex;
+        align-items: center;
+      }
+
+      .menu-logo {
+        height: 3.5rem;
+        padding: 0 1.25rem 0 1rem;
+        border-radius: 4rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        color: var(--base-100);
+        font-weight: 600;
+        font-size: 1rem;
+        letter-spacing: 0.15rem;
+        user-select: none;
+      }
+
+      .menu-items {
+        display: flex;
+        gap: 0.35rem;
+      }
+
+      .menu-items .menu-item {
+        width: max-content;
+        height: 3.5rem;
+        background-color: var(--base-100);
+        border-radius: 4rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        opacity: 0;
+      }
+
+      .menu-items .menu-item a {
+        text-decoration: none;
+        color: var(--ink);
+        font-weight: 500;
+        letter-spacing: -0.01rem;
+        padding: 0 1.5rem;
+        user-select: none;
+      }
+
+      .menu-toggler {
+        position: relative;
+        width: 3.5rem;
+        height: 3.5rem;
+        padding: 1.125rem;
+        background-color: var(--base-300);
+        border-radius: 4rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.2rem;
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+
+      .menu-toggler span {
+        position: relative;
+        width: 100%;
+        height: 0.125rem;
+        background-color: var(--base-400);
+        transition: transform 0.3s ease;
+        transform-origin: center;
+        will-change: transform;
+      }
+
+      .menu-toggler.close span:nth-child(1) {
+        transform: rotate(45deg) translateX(0.125rem) translateY(0.1rem) scaleX(0.9);
+      }
+
+      .menu-toggler.close span:nth-child(2) {
+        transform: rotate(-45deg) translateX(0.125rem) translateY(-0.1rem) scaleX(0.9);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="menu-drop-zone"></div>
+
+    <div class="menu-drawer">
+      <div class="menu-logo">MENU</div>
+
+      <div class="menu-items">
+        <div class="menu-item"><a href="#work">Work</a></div>
+        <div class="menu-item"><a href="#manifesto">Manifesto</a></div>
+        <div class="menu-item"><a href="#contact">Contact</a></div>
+      </div>
+
+      <div class="menu-toggler" aria-label="Toggle menu" role="button" tabindex="0">
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Draggable.min.js"></script>
+
+    <script>
+      gsap.registerPlugin(Draggable);
+
+      // Elements
+      const dropZone = document.querySelector(".menu-drop-zone");
+      const drawer = document.querySelector(".menu-drawer");
+      const logo = document.querySelector(".menu-logo");
+      const items = document.querySelector(".menu-items");
+      const itemList = document.querySelectorAll(".menu-item");
+      const toggler = document.querySelector(".menu-toggler");
+
+      // Layout measurements (rem -> px)
+      const REM = 16;
+      const GAP = 0.35 * REM;
+      const PADDING = 0.35 * REM;
+
+      const itemsWidth = items.offsetWidth;
+      const logoWidth = logo.offsetWidth;
+      const togglerWidth = toggler.offsetWidth;
+
+      const closedWidth = PADDING + logoWidth + GAP + togglerWidth + PADDING;
+      const openWidth = closedWidth + itemsWidth + GAP;
+
+      // Initial state
+      gsap.set(items, { width: 0, marginRight: 0 });
+      gsap.set(itemList, { opacity: 0, scale: 0.85 });
+      gsap.set(dropZone, { width: closedWidth });
+
+      // Open / close
+      let isOpen = false;
+
+      function openMenu() {
+        toggler.classList.add("close");
+        gsap.to(items, {
+          width: itemsWidth,
+          marginRight: GAP,
+          duration: 0.5,
+          ease: "power3.inOut",
+          onStart: () => {
+            gsap.to(itemList, {
+              opacity: 1,
+              scale: 1,
+              duration: 0.3,
+              stagger: 0.05,
+              delay: 0.2,
+              ease: "power3.out",
+            });
+          },
+        });
+      }
+
+      function closeMenu() {
+        toggler.classList.remove("close");
+        gsap.to(items, {
+          width: 0,
+          marginRight: 0,
+          duration: 0.5,
+          ease: "power3.inOut",
+          onStart: () => {
+            gsap.to(itemList, {
+              opacity: 0,
+              scale: 0.85,
+              duration: 0.3,
+              ease: "power3.out",
+              stagger: { each: 0.05, from: "end" },
+            });
+          },
+        });
+      }
+
+      function toggleMenu() {
+        isOpen ? closeMenu() : openMenu();
+        isOpen = !isOpen;
+      }
+
+      toggler.addEventListener("click", toggleMenu);
+      toggler.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleMenu();
+        }
+      });
+
+      // Drag-and-snap behaviour
+      const SNAP_THRESHOLD = 200;
+
+      function isInSnapZone(x, y) {
+        return Math.abs(x) < SNAP_THRESHOLD && Math.abs(y) < SNAP_THRESHOLD;
+      }
+
+      Draggable.create(drawer, {
+        type: "x,y",
+        bounds: window,
+        cursor: "grab",
+        activeCursor: "grabbing",
+
+        onDragStart() {
+          gsap.set(dropZone, { width: isOpen ? openWidth : closedWidth });
+        },
+
+        onDrag() {
+          gsap.to(dropZone, {
+            opacity: isInSnapZone(this.x, this.y) ? 1 : 0,
+            duration: 0.1,
+          });
+        },
+
+        onDragEnd() {
+          gsap.to(dropZone, { opacity: 0, duration: 0.1 });
+
+          if (isInSnapZone(this.x, this.y)) {
+            gsap.to(drawer, {
+              x: 0,
+              y: 0,
+              duration: 0.3,
+              ease: "power2.out",
+            });
+          }
+        },
+      });
+    </script>
+  </body>
+</html>
